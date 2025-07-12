@@ -1,0 +1,13 @@
+{
+  "name": "starcoin-frontend",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "vite": "^4.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  }
+}
