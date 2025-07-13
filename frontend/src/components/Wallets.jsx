@@ -1,150 +1,112 @@
+// ~/starcoin-exchange/frontend/src/components/Wallets.jsx
+
 import React, { useEffect, useState } from "react";
+import BACKEND_URL from "../config";
 
 const Wallets = () => {
   const [wallets, setWallets] = useState([]);
   const [history, setHistory] = useState([]);
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [amount, setAmount] = useState("");
   const [sendAmount, setSendAmount] = useState("");
-  const [paypalEmail, setPaypalEmail] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [paypalEmail, setPaypalEmail] = useState("");
   const [message, setMessage] = useState("");
 
   const fetchWallets = async () => {
-    try {
-      const res = await fetch("http://localhost:5000/wallets");
-      const data = await res.json();
-      setWallets(data);
-    } catch (err) {
-      console.error("Error fetching wallets:", err);
-    }
+    const res = await fetch(`${BACKEND_URL}/wallets`);
+    const data = await res.json();
+    setWallets(Object.entries(data));
   };
 
-  const fetchHistory = async () => {
-    try {
-      const res = await fetch("http://localhost:5000/transactions");
-      const data = await res.json();
-      setHistory(data.reverse());
-    } catch (err) {
-      console.error("Error fetching history:", err);
-    }
+  const fetchTransactions = async () => {
+    const res = await fetch(`${BACKEND_URL}/transactions`);
+    const data = await res.json();
+    setHistory(data.reverse());
   };
 
   useEffect(() => {
     fetchWallets();
-    fetchHistory();
-    const interval = setInterval(() => {
-      fetchWallets();
-      fetchHistory();
-    }, 5000);
-    return () => clearInterval(interval);
+    fetchTransactions();
   }, []);
 
-  const handleTransfer = async () => {
-    const res = await fetch("http://localhost:5000/transfer", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to, amount: parseFloat(amount) })
-    });
-    const data = await res.json();
-    setMessage(data.message || data.error);
-    fetchWallets();
-    fetchHistory();
-  };
-
-  const handleTrade = async () => {
-    const res = await fetch("http://localhost:5000/sell", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ from, send_amount: parseFloat(sendAmount) })
-    });
-    const data = await res.json();
-    setMessage(data.message || data.error);
-    fetchWallets();
-    fetchHistory();
-  };
-
   const handleWithdraw = async () => {
-    const res = await fetch("http://localhost:5000/withdraw", {
+    const res = await fetch(`${BACKEND_URL}/withdraw`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        from,
-        amount: parseFloat(withdrawAmount),
-        paypal_email: paypalEmail
+        from: "Alice",
+        amount: Number(withdrawAmount),
+        email: paypalEmail
       })
     });
-    const data = await res.json();
-    setMessage(data.message || data.error);
+    const result = await res.json();
+    setMessage(result.message);
     fetchWallets();
-    fetchHistory();
+    fetchTransactions();
+  };
+
+  const handleTrade = async () => {
+    const res = await fetch(`${BACKEND_URL}/sell`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: "Alice",
+        send_amount: Number(sendAmount)
+      })
+    });
+    const result = await res.json();
+    setMessage(result.message);
+    fetchWallets();
+    fetchTransactions();
   };
 
   return (
-    <div style={{ padding: 20, fontFamily: "Arial" }}>
-      <h1>🌞 Starcoin Exchange</h1>
-
-      <h2>Transfer</h2>
-      <select onChange={(e) => setFrom(e.target.value)} defaultValue="">
-        <option disabled value="">From Wallet</option>
-        {wallets.map(w => <option key={w.name}>{w.name}</option>)}
-      </select>
-      <select onChange={(e) => setTo(e.target.value)} defaultValue="">
-        <option disabled value="">To Wallet</option>
-        {wallets.map(w => <option key={w.name}>{w.name}</option>)}
-      </select>
-      <input
-        type="number"
-        placeholder="Amount"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-      />
-      <button onClick={handleTransfer}>Send</button>
-
-      <h2>Trade</h2>
+    <div>
+      <h2 className="text-xl font-semibold mb-2">Trade</h2>
       <input
         type="number"
         placeholder="Send Amount"
         value={sendAmount}
         onChange={(e) => setSendAmount(e.target.value)}
+        className="text-black p-2 rounded mr-2"
       />
-      <button onClick={handleTrade}>Trade STC → USD</button>
+      <button onClick={handleTrade} className="bg-blue-600 px-4 py-2 rounded">Trade STC → USD</button>
 
-      <h2>Withdraw</h2>
+      <h2 className="text-xl font-semibold mt-4 mb-2">Withdraw</h2>
       <input
         type="number"
         placeholder="Amount"
         value={withdrawAmount}
         onChange={(e) => setWithdrawAmount(e.target.value)}
+        className="text-black p-2 rounded mr-2"
       />
       <input
         type="email"
         placeholder="PayPal Email"
         value={paypalEmail}
         onChange={(e) => setPaypalEmail(e.target.value)}
+        className="text-black p-2 rounded mr-2"
       />
-      <button onClick={handleWithdraw}>Withdraw to PayPal</button>
+      <button onClick={handleWithdraw} className="bg-yellow-600 px-4 py-2 rounded">Withdraw to PayPal</button>
 
-      <h2>Starcoin Wallets</h2>
+      <h2 className="text-xl font-semibold mt-4 mb-2">💼 Starcoin Wallets</h2>
       <ul>
-        {wallets.map(w => (
-          <li key={w.name}>
-            <strong>{w.name}</strong>: {w.stc.toFixed(2)} STC, ${w.usd.toFixed(2)} USD
+        {wallets.map(([name, { stc, usd }]) => (
+          <li key={name}>
+            <strong>{name}</strong>: {stc.toFixed(2)} STC, ${usd.toFixed(2)} USD
           </li>
         ))}
       </ul>
 
-      <h2>Recent Transactions</h2>
+      <h2 className="text-xl font-semibold mt-4 mb-2">📜 Recent Transactions</h2>
       <ul>
         {history.map((tx, i) => (
           <li key={i}>
-            [{new Date(tx.timestamp).toLocaleTimeString()}] {tx.type.toUpperCase()} – {tx.from} {tx.to ? `→ ${tx.to}` : ""}: {tx.amount} {tx.currency}
+            [{new Date(tx.timestamp).toLocaleTimeString()}] {tx.type.toUpperCase()} – {tx.name} {tx.usd ? `→ $${tx.usd}` : ""}
           </li>
         ))}
       </ul>
 
-      {message && <p><strong>Status:</strong> {message}</p>}
+      {message && <p className="mt-4 font-bold">{message}</p>}
     </div>
   );
 };
