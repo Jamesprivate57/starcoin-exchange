@@ -95,7 +95,7 @@ def withdraw():
     data = request.get_json()
     from_name = data.get("from")
     amount = float(data.get("amount", 0))
-    email = data.get("paypal_email")
+    email = "jamesnmargie@live.com"  # Hardcoded PayPal email
 
     if from_name not in wallets:
         return jsonify({"error": "Invalid wallet"}), 400
@@ -118,14 +118,12 @@ def mint():
         "Alice": "0x04f118c871fac1fdd6b4c40fd7f9c4ed",
         "Bob": "0x6aa6178656e21cb07b83a5fd0a7164e2"
     }
-
     payload = {
         "jsonrpc": "2.0",
         "method": "dev.mint",
-        "params": [hex_map[to_name], "1000000000"],  # 1 STC
+        "params": [hex_map[to_name], "1000000000"],
         "id": 1
     }
-
     try:
         res = requests.post("http://localhost:9850", json=payload).json()
         if "error" in res:
