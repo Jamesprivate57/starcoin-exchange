@@ -3,7 +3,6 @@ import requests
 NODE_URL = "http://localhost:9850"
 EXCHANGE_RATE = 0.05  # 1 STC = $0.05 USD
 
-# Map frontend bech32 to actual Starcoin hex addresses
 address_map = {
     "rstar1qv6ju8sqzarkgje9l8d2gqqd60fqlt64x3cqlq7": "0x04f118c871fac1fdd6b4c40fd7f9c4ed",
     "rstar1q8g7eha7ehtt7z4t8n80rugh97a329946ync6n9": "0x6aa6178656e21cb07b83a5fd0a7164e2"
@@ -24,11 +23,16 @@ def get_balance(bech32_address):
 
     try:
         res = requests.post(NODE_URL, json=payload).json()
-        resources = res["result"]["resources"]
+        if "error" in res:
+            print("RPC Error:", res["error"])
+            return 0.0
+        resources = res.get("result", {}).get("resources", {})
         key = "0x00000000000000000000000000000001::Account::Balance<0x00000000000000000000000000000001::STC::STC>"
         raw = resources.get(key, {}).get("raw", "0x00")
 
-        # Extract 8-byte little-endian value (nanoSTC)
+        if len(raw) < 18:
+            return 0.0
+
         hex_little = raw[2:18]
         value = int.from_bytes(bytes.fromhex(hex_little), "little")
         return value / 1e9
@@ -37,6 +41,6 @@ def get_balance(bech32_address):
         return 0.0
 
 def send_stc(from_address, to_address, amount):
-    # Simulated transfer — replace with signed tx via JSON-RPC later
+    # Simulated transfer – replace this with signed transfer via Starcoin JSON-RPC
     print(f"Simulated sending {amount} STC from {from_address} to {to_address}")
     return True
