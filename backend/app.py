@@ -3,7 +3,6 @@ from flask_cors import CORS
 from wallet import get_balance, send_stc
 from datetime import datetime
 import requests
-import os
 
 app = Flask(__name__)
 CORS(app)
@@ -35,6 +34,10 @@ def log_transaction(tx_type, from_user, to_user, amount, currency):
     if len(transactions) > 10:
         transactions.pop(0)
 
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify({"message": "✅ Starcoin Exchange API is live."})
+
 @app.route("/wallets", methods=["GET"])
 def get_wallets():
     output = []
@@ -43,12 +46,7 @@ def get_wallets():
         usd = round(balance * 0.05, 2)
         data["stc"] = balance
         data["usd"] = usd
-        output.append({
-            "name": name,
-            "address": data["address"],
-            "stc": balance,
-            "usd": usd
-        })
+        output.append({"name": name, "address": data["address"], "stc": balance, "usd": usd})
     return jsonify(output)
 
 @app.route("/transfer", methods=["POST"])
@@ -139,5 +137,4 @@ def get_transactions():
     return jsonify(transactions)
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=10000)
