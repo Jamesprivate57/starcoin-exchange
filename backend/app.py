@@ -95,7 +95,7 @@ def withdraw():
     data = request.get_json()
     from_name = data.get("from")
     amount = float(data.get("amount", 0))
-    email = "jamesnmargie@live.com"  # Hardcoded PayPal email
+    email = "jamesnmargie@live.com.au"  # ✅ Corrected hardcoded PayPal email
 
     if from_name not in wallets:
         return jsonify({"error": "Invalid wallet"}), 400
