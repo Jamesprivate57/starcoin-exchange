@@ -3,6 +3,7 @@ from flask_cors import CORS
 from wallet import get_balance, send_stc
 from datetime import datetime
 import requests
+import os
 
 app = Flask(__name__)
 CORS(app)
@@ -95,7 +96,7 @@ def withdraw():
     data = request.get_json()
     from_name = data.get("from")
     amount = float(data.get("amount", 0))
-    email = "jamesnmargie@live.com.au"  # ✅ Corrected hardcoded PayPal email
+    email = data.get("paypal_email")
 
     if from_name not in wallets:
         return jsonify({"error": "Invalid wallet"}), 400
@@ -138,4 +139,5 @@ def get_transactions():
     return jsonify(transactions)
 
 if __name__ == "__main__":
-    app.run(port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
