@@ -1,140 +1,107 @@
-from flask import Flask, jsonify, request
-from flask_cors import CORS
-from wallet import get_balance, send_stc
-from datetime import datetime
+from flask import Flask, request, jsonify
 import requests
+from datetime import datetime
 
 app = Flask(__name__)
-CORS(app)
 
 wallets = {
     "Alice": {
-        "address": "rstar1qv6ju8sqzarkgje9l8d2gqqd60fqlt64x3cqlq7",
+        "address": "0x04f118c871fac1fdd6b4c40fd7f9c4ed",
         "stc": 0.0,
-        "usd": 0.0
+        "usd": 100.0  # starting USD balance for demo
     },
     "Bob": {
-        "address": "rstar1q8g7eha7ehtt7z4t8n80rugh97a329946ync6n9",
+        "address": "0x6aa6178656e21cb07b83a5fd0a7164e2",
         "stc": 0.0,
-        "usd": 0.0
+        "usd": 100.0
     }
 }
 
 transactions = []
 
-def log_transaction(tx_type, from_user, to_user, amount, currency):
-    transactions.append({
-        "timestamp": datetime.utcnow().isoformat(),
-        "type": tx_type,
-        "from": from_user,
-        "to": to_user,
-        "amount": amount,
-        "currency": currency
-    })
-    if len(transactions) > 10:
-        transactions.pop(0)
+EXCHANGE_RATE = 0.05  # 1 STC = $0.05
 
-@app.route("/", methods=["GET"])
-def home():
-    return jsonify({"message": "✅ Starcoin Exchange API is live."})
+@app.route("/")
+def root():
+    return jsonify({"message": "🚀 Starcoin Exchange API is live."})
 
 @app.route("/wallets", methods=["GET"])
 def get_wallets():
-    output = []
-    for name, data in wallets.items():
-        balance = get_balance(data["address"])
-        usd = round(balance * 0.05, 2)
-        data["stc"] = balance
-        data["usd"] = usd
-        output.append({"name": name, "address": data["address"], "stc": balance, "usd": usd})
-    return jsonify(output)
+    live_balances = []
+    for name, info in wallets.items():
+        live_balances.append({
+            "name": name,
+            "address": info["address"],
+            "stc": info["stc"],
+            "usd": info["usd"]
+        })
+    return jsonify(live_balances)
 
-@app.route("/transfer", methods=["POST"])
-def transfer():
+@app.route("/buy", methods=["POST"])
+def buy():
     data = request.get_json()
-    from_name = data.get("from")
-    to_name = data.get("to")
-    amount = float(data.get("amount", 0))
+    name = data.get("name")
+    usd_amount = float(data.get("usd"))
 
-    if from_name not in wallets or to_name not in wallets:
-        return jsonify({"error": "Invalid wallets"}), 400
+    if name not in wallets:
+        return jsonify({"error": "Invalid wallet name"}), 400
 
-    if wallets[from_name]["stc"] < amount:
-        return jsonify({"error": "Insufficient STC balance"}), 400
+    wallet = wallets[name]
+    if wallet["usd"] < usd_amount:
+        return jsonify({"error": "Insufficient USD balance"}), 400
 
-    success = send_stc(wallets[from_name]["address"], wallets[to_name]["address"], amount)
-    if success:
-        wallets[from_name]["stc"] -= amount
-        wallets[to_name]["stc"] += amount
-        log_transaction("transfer", from_name, to_name, amount, "STC")
-        return jsonify({"status": "success", "message": f"{amount} STC sent from {from_name} to {to_name}"}), 200
-    else:
-        return jsonify({"error": "Transfer failed"}), 500
+    stc_amount = usd_amount / EXCHANGE_RATE
+    wallet["usd"] -= usd_amount
+    wallet["stc"] += stc_amount
+
+    transactions.append({
+        "type": "buy",
+        "name": name,
+        "usd": usd_amount,
+        "stc": stc_amount,
+        "timestamp": datetime.utcnow().isoformat()
+    })
+
+    return jsonify({
+        "status": "success",
+        "message": f"{name} bought {stc_amount:.2f} STC for ${usd_amount:.2f}",
+        "balance": wallet
+    })
 
 @app.route("/sell", methods=["POST"])
 def sell():
     data = request.get_json()
-    from_name = data.get("from")
-    send_amount = float(data.get("send_amount", 0))
+    name = data.get("name")
+    stc_amount = float(data.get("stc"))
 
-    if from_name not in wallets:
-        return jsonify({"error": "Invalid wallet"}), 400
+    if name not in wallets:
+        return jsonify({"error": "Invalid wallet name"}), 400
 
-    if wallets[from_name]["stc"] < send_amount:
+    wallet = wallets[name]
+    if wallet["stc"] < stc_amount:
         return jsonify({"error": "Insufficient STC balance"}), 400
 
-    usd = round(send_amount * 0.05, 2)
-    wallets[from_name]["stc"] -= send_amount
-    wallets[from_name]["usd"] += usd
-    log_transaction("sell", from_name, None, send_amount, "STC")
-    return jsonify({"status": "success", "txid": True, "usd": usd})
+    usd_amount = stc_amount * EXCHANGE_RATE
+    wallet["stc"] -= stc_amount
+    wallet["usd"] += usd_amount
 
-@app.route("/withdraw", methods=["POST"])
-def withdraw():
-    data = request.get_json()
-    from_name = data.get("from")
-    amount = float(data.get("amount", 0))
-    email = data.get("paypal_email")
+    transactions.append({
+        "type": "sell",
+        "name": name,
+        "stc": stc_amount,
+        "usd": usd_amount,
+        "timestamp": datetime.utcnow().isoformat()
+    })
 
-    if from_name not in wallets:
-        return jsonify({"error": "Invalid wallet"}), 400
-
-    if wallets[from_name]["usd"] < amount:
-        return jsonify({"error": "Insufficient USD balance"}), 400
-
-    wallets[from_name]["usd"] -= amount
-    log_transaction("withdraw", from_name, email, amount, "USD")
-    return jsonify({"status": "success", "message": f"${amount:.2f} withdrawn to {email}"}), 200
-
-@app.route("/mint", methods=["POST"])
-def mint():
-    data = request.get_json()
-    to_name = data.get("to")
-    if to_name not in wallets:
-        return jsonify({"error": "Invalid wallet"}), 400
-
-    hex_map = {
-        "Alice": "0x04f118c871fac1fdd6b4c40fd7f9c4ed",
-        "Bob": "0x6aa6178656e21cb07b83a5fd0a7164e2"
-    }
-    payload = {
-        "jsonrpc": "2.0",
-        "method": "dev.mint",
-        "params": [hex_map[to_name], "1000000000"],
-        "id": 1
-    }
-    try:
-        res = requests.post("http://localhost:9850", json=payload).json()
-        if "error" in res:
-            return jsonify({"error": res["error"]["message"]}), 500
-        log_transaction("mint", "system", to_name, 1, "STC")
-        return jsonify({"status": "success", "message": f"1 STC minted to {to_name}"}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return jsonify({
+        "status": "success",
+        "message": f"{name} sold {stc_amount:.2f} STC for ${usd_amount:.2f}",
+        "balance": wallet
+    })
 
 @app.route("/transactions", methods=["GET"])
 def get_transactions():
     return jsonify(transactions)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    app.run(host="0.0.0.0", port=5000)
