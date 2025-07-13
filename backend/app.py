@@ -1,44 +1,39 @@
-from flask import Flask, request, jsonify
-import requests
+# -*- coding: utf-8 -*-
+from flask import Flask, jsonify, request
+from flask_cors import CORS
 from datetime import datetime
+import requests
 
 app = Flask(__name__)
+CORS(app)
 
+# In-memory wallet balances (STC and USD)
 wallets = {
-    "Alice": {
-        "address": "0x04f118c871fac1fdd6b4c40fd7f9c4ed",
-        "stc": 0.0,
-        "usd": 100.0  # starting USD balance for demo
-    },
-    "Bob": {
-        "address": "0x6aa6178656e21cb07b83a5fd0a7164e2",
-        "stc": 0.0,
-        "usd": 100.0
-    }
+    "Alice": {"stc": 100.0, "usd": 0.0},
+    "Bob": {"stc": 50.0, "usd": 0.0},
+    "Charlie": {"stc": 75.0, "usd": 0.0}
 }
 
+# Simulated transaction history
 transactions = []
 
-EXCHANGE_RATE = 0.05  # 1 STC = $0.05
+# Fixed exchange rate
+EXCHANGE_RATE = 0.05  # 1 STC = 0.05 USD
 
 @app.route("/")
-def root():
+def index():
     return jsonify({"message": "🚀 Starcoin Exchange API is live."})
 
 @app.route("/wallets", methods=["GET"])
 def get_wallets():
-    live_balances = []
-    for name, info in wallets.items():
-        live_balances.append({
-            "name": name,
-            "address": info["address"],
-            "stc": info["stc"],
-            "usd": info["usd"]
-        })
-    return jsonify(live_balances)
+    return jsonify(wallets)
+
+@app.route("/transactions", methods=["GET"])
+def get_transactions():
+    return jsonify(transactions)
 
 @app.route("/buy", methods=["POST"])
-def buy():
+def buy_stc():
     data = request.get_json()
     name = data.get("name")
     usd_amount = float(data.get("usd"))
@@ -46,30 +41,26 @@ def buy():
     if name not in wallets:
         return jsonify({"error": "Invalid wallet name"}), 400
 
-    wallet = wallets[name]
-    if wallet["usd"] < usd_amount:
-        return jsonify({"error": "Insufficient USD balance"}), 400
-
-    stc_amount = usd_amount / EXCHANGE_RATE
-    wallet["usd"] -= usd_amount
-    wallet["stc"] += stc_amount
+    stc_bought = usd_amount / EXCHANGE_RATE
+    wallets[name]["stc"] += stc_bought
+    wallets[name]["usd"] -= usd_amount  # simulate deduction
 
     transactions.append({
         "type": "buy",
         "name": name,
         "usd": usd_amount,
-        "stc": stc_amount,
+        "stc": stc_bought,
         "timestamp": datetime.utcnow().isoformat()
     })
 
     return jsonify({
         "status": "success",
-        "message": f"{name} bought {stc_amount:.2f} STC for ${usd_amount:.2f}",
-        "balance": wallet
+        "message": f"{stc_bought:.2f} STC bought for ${usd_amount:.2f}",
+        "balance": wallets[name]
     })
 
 @app.route("/sell", methods=["POST"])
-def sell():
+def sell_stc():
     data = request.get_json()
     name = data.get("name")
     stc_amount = float(data.get("stc"))
@@ -77,31 +68,55 @@ def sell():
     if name not in wallets:
         return jsonify({"error": "Invalid wallet name"}), 400
 
-    wallet = wallets[name]
-    if wallet["stc"] < stc_amount:
-        return jsonify({"error": "Insufficient STC balance"}), 400
+    if wallets[name]["stc"] < stc_amount:
+        return jsonify({"error": "Insufficient STC"}), 400
 
-    usd_amount = stc_amount * EXCHANGE_RATE
-    wallet["stc"] -= stc_amount
-    wallet["usd"] += usd_amount
+    usd_earned = stc_amount * EXCHANGE_RATE
+    wallets[name]["stc"] -= stc_amount
+    wallets[name]["usd"] += usd_earned
 
     transactions.append({
         "type": "sell",
         "name": name,
+        "usd": usd_earned,
         "stc": stc_amount,
-        "usd": usd_amount,
         "timestamp": datetime.utcnow().isoformat()
     })
 
     return jsonify({
         "status": "success",
-        "message": f"{name} sold {stc_amount:.2f} STC for ${usd_amount:.2f}",
-        "balance": wallet
+        "message": f"{stc_amount:.2f} STC sold for ${usd_earned:.2f}",
+        "balance": wallets[name]
     })
 
-@app.route("/transactions", methods=["GET"])
-def get_transactions():
-    return jsonify(transactions)
+@app.route("/withdraw", methods=["POST"])
+def withdraw():
+    data = request.get_json()
+    name = data.get("name")
+    usd_amount = float(data.get("usd"))
+    email = data.get("email")
+
+    if name not in wallets:
+        return jsonify({"error": "Invalid wallet name"}), 400
+
+    if wallets[name]["usd"] < usd_amount:
+        return jsonify({"error": "Insufficient USD balance"}), 400
+
+    wallets[name]["usd"] -= usd_amount
+
+    transactions.append({
+        "type": "withdraw",
+        "name": name,
+        "usd": usd_amount,
+        "email": email,
+        "timestamp": datetime.utcnow().isoformat()
+    })
+
+    return jsonify({
+        "status": "success",
+        "message": f"${usd_amount:.2f} withdrawn to PayPal email: {email}",
+        "balance": wallets[name]
+    })
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=10000)
