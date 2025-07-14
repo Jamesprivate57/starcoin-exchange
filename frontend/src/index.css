@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  @apply bg-cover bg-center bg-no-repeat text-white font-mono;
+  @apply bg-cover bg-center bg-no-repeat text-white font-sans;
   background-image: url('/bg.jpg');
   min-height: 100vh;
   margin: 0;

@@ -5,9 +5,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/wallets': 'http://localhost:10000',
-      '/transactions': 'http://localhost:10000',
-      '/trade': 'http://localhost:10000'
+      '/wallets': 'http://localhost:5000',
+      '/transfer': 'http://localhost:5000',
+      '/transactions': 'http://localhost:5000',
     }
   }
 })
