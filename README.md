@@ -1,20 +1,18 @@
 # 🌟 Starcoin Exchange
 
-A lightweight web-based platform for users to buy **Starcoin (STC)** at a fixed USD rate. Built with **React + Tailwind CSS** (frontend) and **Flask** (backend).  
-Designed for rapid deployment and educational use, with real wallet logic and simulated transfers.
+A lightweight web-based platform for users to buy **Starcoin (STC)** with a fixed USD rate. Built using **React + Tailwind CSS** on the frontend and **Flask** for the backend API.
 
-> ✅ **Live Frontend:** [https://starcoin-static.onrender.com](https://starcoin-static.onrender.com)  
-> ✅ **Live Backend API:** [https://starcoin-exchange.onrender.com](https://starcoin-exchange.onrender.com)
+> ✅ Live frontend: https://starcoin-static.onrender.com  
+> ✅ Live backend API: https://starcoin-exchange.onrender.com
 
 ---
 
 ## 💸 Live Trade Demo
 
-- 🔒 **Fixed rate:** 1 STC = **$4.99 USD**
-- 💼 Fiat payments via PayPal: `jamesnmargie@live.com.au`
-- 🪙 STC is minted into your wallet (mocked or real chain support)
-- 📋 Shows recent transactions with wallet + block metadata
-- 🔐 Data is stored in simple JSON files for speed and transparency
+- 🔒 **1 STC = $3486 USD** (fixed price)
+- 💼 Payments to PayPal: `jamesnmargie@live.com.au`
+- 🪙 Starcoin is minted into the selected wallet upon mock purchase
+- 🧾 Shows last 10 transactions for transparency
 
 ---
 
@@ -22,10 +20,10 @@ Designed for rapid deployment and educational use, with real wallet logic and si
 
 ```
 starcoin-exchange/
-├── backend/               # Flask API
-│   ├── app.py             # Main backend logic
-│   ├── wallets.json       # Per-user balances (USD + STC)
-│   └── transactions.json  # Ledger of purchases
+├── backend/               # Flask backend API
+│   ├── app.py             # Main Flask app
+│   ├── wallets.json       # Mock wallet balances
+│   └── transactions.json  # Transaction history
 │
 ├── frontend/              # React + Tailwind UI
 │   ├── public/
@@ -38,8 +36,6 @@ starcoin-exchange/
 │   │       └── bg.jpg     # Background image
 │   └── vite.config.js
 │
-├── render.yaml            # Optional: Render.com deployment config
-├── requirements.txt       # Flask backend dependencies
 └── README.md
 ```
 
@@ -51,8 +47,8 @@ starcoin-exchange/
 ```bash
 cd backend
 python3 -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
+source venv/bin/activate
+pip install flask
 python app.py
 ```
 
@@ -63,15 +59,16 @@ npm install
 npm run dev
 ```
 
-### 🔹 Update API Endpoint
-In `frontend/src/config.js`:
+> Update the API endpoint in:
+
+`frontend/src/config.js`
 ```js
-export const API_URL = "https://starcoin-exchange.onrender.com";  // Or http://localhost:5000 for local
+export const API_URL = "https://starcoin-exchange.onrender.com";
 ```
 
 ---
 
-## 🏦 Default Wallets (Example Data)
+## 🏦 Default Wallets
 
 ```json
 {
@@ -97,69 +94,42 @@ export const API_URL = "https://starcoin-exchange.onrender.com";  // Or http://l
 
 ## ✨ Features
 
-- ✅ Fixed exchange rate: **1 STC = $4.99 USD**
-- 📈 Transaction history with wallet & block height
-- 🔁 Real STC transfers using `litecoin-cli` (regtest/mainnet supported)
-- 📦 Full JSON file ledger of all activity
-- 🧪 Mint mock balances to simulate a live exchange
-- 💼 User wallets show both STC and fiat value
-- 📬 Optional QR & email receipts (Mailgun-ready)
-- 🎨 Clean responsive layout via Tailwind CSS
-- 🔒 CORS-secured Flask backend, cross-browser ready
-- 🚀 Deployable in 2 minutes with [Render](https://render.com)
+- ✅ Fixed exchange rate: 1 STC = $3486 USD
+- 🔄 Real-time balance updates for wallets
+- 🧪 Mock minting with USD → STC
+- 📜 Display of recent transactions
+- 🎨 Tailwind CSS styling and dark UI
+- 🖼️ Background image support (`src/assets/bg.jpg`)
+- 🚀 Easy to deploy via Render.com
 
 ---
 
-## 🌍 Deployment
+## 🚀 Deployment URLs
 
-### 🌐 Frontend
-```bash
-cd frontend
-npm run build
-npx serve -s dist
-```
-
-### 🛠️ Backend
-```bash
-cd backend
-gunicorn app:app -b 0.0.0.0:5000
-```
-
-Or deploy both to Render using `render.yaml` config.
+- 🌐 Frontend: https://starcoin-static.onrender.com
+- 🛠️ Backend API: https://starcoin-exchange.onrender.com
 
 ---
 
 ## 🧭 Roadmap
 
-- [ ] Live PayPal payment verification via IPN / Webhook
-- [ ] User registration + wallet linking (Google/email auth)
-- [ ] On-chain STC integration (regtest/mainnet)
-- [ ] QR code & transaction email confirmation
-- [ ] Admin portal (approve large trades, freeze wallets)
-- [ ] Live price from CoinGecko
-- [ ] Secure production backend with HTTPS, JWT auth
-- [ ] NGINX + Gunicorn setup for full production
+- [ ] Integrate live PayPal verification
+- [ ] Enable user-auth with wallet linking
+- [ ] Connect real Starcoin node (JSON-RPC or CLI)
+- [ ] Enable on-chain transfers + confirmations
+- [ ] Add email receipts and real KYC/AML
+- [ ] Deploy with domain + HTTPS certificate
 
 ---
 
 ## 👤 Author
 
 **James Jackson**  
-✉️ `jamesnmargie@live.com.au`  
-🪙 STC Wallet: `rstar1qxxxx...` *(available upon request)*  
-💡 Mission: To launch Starcoin to help fund real-world impact, including child hunger relief and digital freedom initiatives.
+✉️ Email: `jamesnmargie@live.com.au`  
+🪙 STC Wallet: `rstar1qxxxxxx...` *(available upon request)*
 
 ---
 
 ## 🛡️ Disclaimer
 
-This platform is for educational and demonstration purposes only.  
-No actual fiat or crypto is processed unless explicitly integrated.  
-Use responsibly. Ensure legal compliance if operating as a real exchange.
-
----
-
-## 🌐 Links
-
-- Frontend: [https://starcoin-static.onrender.com](https://starcoin-static.onrender.com)
-- Backend: [https://starcoin-exchange.onrender.com](https://starcoin-exchange.onrender.com)
+This platform is a proof-of-concept exchange. No real cryptocurrency is transferred unless specifically integrated with a Starcoin full node. Please verify all payments and regulatory compliance before production use.
