@@ -1,0 +1,5 @@
+{
+  "Alice": { "balance": 0, "fiat_balance": 0 },
+  "Bob": { "balance": 0, "fiat_balance": 0 },
+  "Charlie": { "balance": 0, "fiat_balance": 0 }
+}

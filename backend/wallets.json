@@ -1,14 +1,17 @@
-[
-  {
-    "name": "Alice",
-    "address": "0x04f118c871fac1fdd6b4c40fd7f9c4ed"
+{
+  "Alice": {
+    "address": "rstar1qv6ju8sqzarkgje9l8d2gqqd60fqlt64x3cqlq7",
+    "balance": 100,
+    "fiat_balance": 0
   },
-  {
-    "name": "Bob",
-    "address": "0x6aa6178656e21cb07b83a5fd0a7164e2"
+  "Bob": {
+    "address": "rstar1q42sspqhp57sjwz5d3s59zjqfkqfa4vxxzh56tg",
+    "balance": 50,
+    "fiat_balance": 0
   },
-  {
-    "name": "Charlie",
-    "address": "0xfdfc4f68c64f158e9112ad70838edbb4"
+  "Charlie": {
+    "address": "rstar1qcn3fs80xxuee6wwpr23cng9f9khe07s39r8dqk",
+    "balance": 75,
+    "fiat_balance": 0
   }
-]
+}

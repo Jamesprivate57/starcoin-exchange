@@ -1,75 +1,118 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 
 function App() {
-  const [wallet, setWallet] = useState("");
-  const [amount, setAmount] = useState("");
+  const [address, setAddress] = useState("");
+  const [amountUSD, setAmountUSD] = useState("");
+  const [message, setMessage] = useState("");
   const [transactions, setTransactions] = useState([]);
-
-  const fetchTransactions = async () => {
-    const res = await axios.get("http://localhost:10000/transactions");
-    setTransactions(res.data);
-  };
-
-  const handleBuy = async () => {
-    if (!wallet || !amount) return alert("Enter wallet address and amount");
-    try {
-      await axios.post("http://localhost:10000/mint", {
-        name: wallet,
-        stc: parseFloat(amount),
-      });
-      setAmount("");
-      fetchTransactions();
-    } catch (err) {
-      alert("Transaction failed");
-    }
-  };
+  const API = "http://localhost:5000";
+  const PRICE_PER_STC = 3486;
 
   useEffect(() => {
-    fetchTransactions();
+    fetch(`${API}/transactions`)
+      .then((res) => res.json())
+      .then((data) => setTransactions(data));
   }, []);
 
+  const handleBuy = () => {
+    const usd = parseFloat(amountUSD);
+    const stcAmount = usd / PRICE_PER_STC;
+
+    if (!address || isNaN(usd) || usd <= 0) {
+      setMessage("Please enter a valid amount and address.");
+      return;
+    }
+
+    if (stcAmount < 2) {
+      setMessage("Minimum purchase is 2 STC.");
+      return;
+    }
+
+    fetch(`${API}/transfer`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        address: address,
+        usd: usd,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.status === "success") {
+          setMessage(data.message);
+          setAmountUSD("");
+          setAddress("");
+
+          fetch(`${API}/transactions`)
+            .then((res) => res.json())
+            .then((data) => setTransactions(data));
+        } else {
+          setMessage(data.error || "Transaction failed.");
+        }
+      });
+  };
+
   return (
-    <div className="min-h-screen bg-black text-white font-mono px-4 py-10">
-      <div className="max-w-xl mx-auto space-y-8">
-        <h1 className="text-4xl font-bold text-yellow-400">Buy Starcoin (STC)</h1>
+    <div className="p-6 bg-black text-white min-h-screen font-sans">
+      <div className="max-w-xl mx-auto space-y-6">
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          Buy Starcoin (STC) <span className="text-yellow-400 text-4xl">⭐</span>
+        </h1>
         <p className="text-sm text-gray-300">
-          1 STC = <span className="font-semibold">$4.99 USD</span> — Securely purchase and mint directly.
+          1 STC = <span className="font-bold">${PRICE_PER_STC} USD</span> — Securely purchase and mint directly.
+          <br />
+          <span className="text-red-400">Minimum purchase is 2 STC (${PRICE_PER_STC * 2})</span>
         </p>
 
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="Your Starcoin Wallet Address"
-            value={wallet}
-            onChange={(e) => setWallet(e.target.value)}
-            className="flex-1 px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded"
-          />
-          <input
-            type="number"
-            placeholder="Amount (STC)"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="w-32 px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded"
-          />
+        <div className="bg-gray-800 p-4 rounded-xl space-y-4">
+          <div className="space-y-2">
+            <label className="block text-sm">Your Starcoin Wallet Address:</label>
+            <input
+              type="text"
+              className="w-full p-2 bg-gray-900 text-white rounded"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="0x1234abcd..."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm">Amount (USD):</label>
+            <input
+              type="number"
+              className="w-full p-2 bg-gray-900 text-white rounded"
+              value={amountUSD}
+              onChange={(e) => setAmountUSD(e.target.value)}
+              placeholder={`${PRICE_PER_STC * 2}`}
+            />
+          </div>
+
           <button
             onClick={handleBuy}
-            className="bg-yellow-400 hover:bg-yellow-300 text-black px-4 py-2 rounded"
+            className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded"
           >
             Buy Now
           </button>
+
+          {message && (
+            <p className="text-sm text-green-400 font-mono mt-2">{message}</p>
+          )}
         </div>
 
-        <div>
-          <h2 className="text-xl font-semibold text-blue-400">Recent Transactions</h2>
-          <ul className="mt-2 space-y-1 text-sm text-gray-200">
-            {transactions.length === 0 && <li>No transactions yet.</li>}
-            {transactions.map((tx, idx) => (
-              <li key={idx}>
-                [{tx.timestamp}] Minted {tx.stc} STC for <span className="text-green-300">{tx.name}</span> (${tx.usd})
-              </li>
-            ))}
-          </ul>
+        <div className="bg-gray-800 p-4 rounded-xl">
+          <h2 className="text-xl font-semibold mb-2">Recent Transactions</h2>
+          {transactions.length === 0 ? (
+            <p className="text-sm text-gray-400">No transactions yet.</p>
+          ) : (
+            <ul className="text-sm space-y-1">
+              {transactions.map((tx, i) => (
+                <li key={i} className="border-b border-gray-700 pb-1">
+                  <span className="font-bold">{tx.stc} STC</span> sent to{" "}
+                  <span className="text-green-300">{tx.address}</span> (${tx.usd})
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>

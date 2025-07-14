@@ -1,122 +1,88 @@
 # -*- coding: utf-8 -*-
 from flask import Flask, jsonify, request
-from flask_cors import CORS
-from datetime import datetime
-import requests
+import subprocess
+import json
+import time
 
 app = Flask(__name__)
-CORS(app)
 
-# In-memory wallet balances (STC and USD)
-wallets = {
-    "Alice": {"stc": 100.0, "usd": 0.0},
-    "Bob": {"stc": 50.0, "usd": 0.0},
-    "Charlie": {"stc": 75.0, "usd": 0.0}
-}
+# CLI + Node settings
+LITECOIN_CLI = "/mnt/c/CryptoProjects/litecoin/src/litecoin-cli"
+DATADIR = "/mnt/c/CryptoProjects/starcoin-data"
+WALLET_NAME = "starcoin_wallet"
+CONFIRM_ADDRESS = "rstar1qv6ju8sqzarkgje9l8d2gqqd60fqlt64x3cqlq7"
+NETWORK = "-regtest"
+MIN_STC = 10
 
-# Simulated transaction history
-transactions = []
+TX_LOG = "transactions.json"
 
-# Fixed exchange rate
-EXCHANGE_RATE = 0.05  # 1 STC = 0.05 USD
+# Load existing transactions
+try:
+    with open(TX_LOG, "r") as f:
+        transactions = json.load(f)
+except:
+    transactions = []
 
-@app.route("/")
-def index():
-    return jsonify({"message": "🚀 Starcoin Exchange API is live."})
+def send_stc(address, amount):
+    """Send STC via litecoin-cli"""
+    cmd = [
+        LITECOIN_CLI, NETWORK,
+        f"-datadir={DATADIR}",
+        f"-rpcwallet={WALLET_NAME}",
+        "sendtoaddress", address, str(amount)
+    ]
+    txid = subprocess.check_output(cmd).decode().strip()
+    return txid
 
-@app.route("/wallets", methods=["GET"])
-def get_wallets():
-    return jsonify(wallets)
+def mine_block():
+    """Mine 1 block to confirm"""
+    cmd = [
+        LITECOIN_CLI, NETWORK,
+        f"-datadir={DATADIR}",
+        "generatetoaddress", "1", CONFIRM_ADDRESS
+    ]
+    subprocess.call(cmd)
+
+@app.route("/transfer", methods=["POST"])
+def transfer():
+    data = request.get_json()
+    address = data.get("address", "").strip()
+    amount = float(data.get("amount", 0))
+    name = data.get("name", "Anonymous")
+
+    if not address.startswith("rstar1q") or amount < MIN_STC:
+        return jsonify({"error": "Invalid address or amount < 10 STC"}), 400
+
+    try:
+        txid = send_stc(address, amount)
+        mine_block()
+
+        entry = {
+            "name": name,
+            "stc": amount,
+            "address": address,
+            "txid": txid,
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+        }
+
+        transactions.insert(0, entry)
+        transactions[:] = transactions[:10]
+
+        with open(TX_LOG, "w") as f:
+            json.dump(transactions, f, indent=2)
+
+        return jsonify({"status": "success", "txid": txid, "message": f"{amount} STC sent to {address}"})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/transactions", methods=["GET"])
-def get_transactions():
+def get_tx():
     return jsonify(transactions)
 
-@app.route("/buy", methods=["POST"])
-def buy_stc():
-    data = request.get_json()
-    name = data.get("name")
-    usd_amount = float(data.get("usd"))
-
-    if name not in wallets:
-        return jsonify({"error": "Invalid wallet name"}), 400
-
-    stc_bought = usd_amount / EXCHANGE_RATE
-    wallets[name]["stc"] += stc_bought
-    wallets[name]["usd"] -= usd_amount  # simulate deduction
-
-    transactions.append({
-        "type": "buy",
-        "name": name,
-        "usd": usd_amount,
-        "stc": stc_bought,
-        "timestamp": datetime.utcnow().isoformat()
-    })
-
-    return jsonify({
-        "status": "success",
-        "message": f"{stc_bought:.2f} STC bought for ${usd_amount:.2f}",
-        "balance": wallets[name]
-    })
-
-@app.route("/sell", methods=["POST"])
-def sell_stc():
-    data = request.get_json()
-    name = data.get("name")
-    stc_amount = float(data.get("stc"))
-
-    if name not in wallets:
-        return jsonify({"error": "Invalid wallet name"}), 400
-
-    if wallets[name]["stc"] < stc_amount:
-        return jsonify({"error": "Insufficient STC"}), 400
-
-    usd_earned = stc_amount * EXCHANGE_RATE
-    wallets[name]["stc"] -= stc_amount
-    wallets[name]["usd"] += usd_earned
-
-    transactions.append({
-        "type": "sell",
-        "name": name,
-        "usd": usd_earned,
-        "stc": stc_amount,
-        "timestamp": datetime.utcnow().isoformat()
-    })
-
-    return jsonify({
-        "status": "success",
-        "message": f"{stc_amount:.2f} STC sold for ${usd_earned:.2f}",
-        "balance": wallets[name]
-    })
-
-@app.route("/withdraw", methods=["POST"])
-def withdraw():
-    data = request.get_json()
-    name = data.get("name")
-    usd_amount = float(data.get("usd"))
-    email = data.get("email")
-
-    if name not in wallets:
-        return jsonify({"error": "Invalid wallet name"}), 400
-
-    if wallets[name]["usd"] < usd_amount:
-        return jsonify({"error": "Insufficient USD balance"}), 400
-
-    wallets[name]["usd"] -= usd_amount
-
-    transactions.append({
-        "type": "withdraw",
-        "name": name,
-        "usd": usd_amount,
-        "email": email,
-        "timestamp": datetime.utcnow().isoformat()
-    })
-
-    return jsonify({
-        "status": "success",
-        "message": f"${usd_amount:.2f} withdrawn to PayPal email: {email}",
-        "balance": wallets[name]
-    })
+@app.route("/", methods=["GET"])
+def root():
+    return jsonify({"message": "🚀 Starcoin Exchange API is live."})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    app.run(host="0.0.0.0", port=5000)
