@@ -1,93 +1,100 @@
-import './index.css';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from "react";
+import "./index.css";
 
-const API = "https://starcoin-exchange.onrender.com";
+const API = "http://localhost:5000";
 const PRICE_PER_STC = 3486;
 
-export default function App() {
+function App() {
   const [address, setAddress] = useState("");
   const [amountUSD, setAmountUSD] = useState("");
   const [transactions, setTransactions] = useState([]);
-  const [message, setMessage] = useState("");
 
   useEffect(() => {
     fetch(`${API}/transactions`)
       .then((res) => res.json())
-      .then((data) => setTransactions(data.reverse().slice(0, 10)));
+      .then((data) => setTransactions(data));
   }, []);
 
-  const handleBuy = async () => {
-    if (!address || !amountUSD) {
-      setMessage("⚠️ Please enter wallet address and amount.");
-      return;
-    }
-
-    const res = await fetch(`${API}/transfer`, {
+  const handleBuy = () => {
+    if (!address || !amountUSD) return;
+    fetch(`${API}/transfer`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ address, amountUSD }),
-    });
-
-    const data = await res.json();
-    setMessage(data.message);
-    setAddress("");
-    setAmountUSD("");
-
-    const txRes = await fetch(`${API}/transactions`);
-    const txData = await txRes.json();
-    setTransactions(txData.reverse().slice(0, 10));
+      body: JSON.stringify({
+        to: address,
+        amount: parseFloat(amountUSD),
+      }),
+    })
+      .then((res) => res.json())
+      .then(() => {
+        setAddress("");
+        setAmountUSD("");
+        fetch(`${API}/transactions`)
+          .then((res) => res.json())
+          .then((data) => setTransactions(data));
+      });
   };
 
   return (
-    <div className="min-h-screen text-black bg-white px-6 py-10 font-sans">
-      <h1 className="text-3xl font-bold mb-4">🚀 Starcoin is the future of free trade. The more you buy, the wealthier you become in digital wealth. 💰</h1>
+    <div className="p-6">
+      <h1 className="text-3xl font-bold mb-4">
+        🚀 Starcoin is the future of free trade. The more you buy, the wealthier you become in digital wealth. 💰
+      </h1>
 
-      <h2 className="text-2xl font-bold mb-2">Buy Starcoin (STC) ⭐</h2>
-      <p className="mb-1">1 STC = ${PRICE_PER_STC} USD</p>
-      <p className="mb-3">Minimum purchase is 2 STC (${2 * PRICE_PER_STC})</p>
+      <h2 className="text-2xl font-bold mt-4">
+        Buy Starcoin (STC) <span>⭐</span>
+      </h2>
 
-      <div className="mb-6 space-y-1">
+      <p className="mt-2">1 STC = $3486 USD</p>
+
+      <div className="mt-4">
         <input
           type="text"
-          placeholder="Your Starcoin Wallet Address: rstar1q..."
+          placeholder="Your Starcoin Wallet Address"
+          className="text-black p-1 mr-2"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
-          className="border p-2 w-full"
         />
         <input
-          type="number"
-          placeholder={`Min $${2 * PRICE_PER_STC}`}
+          type="text"
+          placeholder="Amount (USD)"
+          className="text-black p-1 mr-2"
           value={amountUSD}
           onChange={(e) => setAmountUSD(e.target.value)}
-          className="border p-2 w-full"
         />
-        <button onClick={handleBuy} className="bg-yellow-400 hover:bg-yellow-500 px-4 py-2 mt-2 rounded">
+        <button onClick={handleBuy} className="bg-yellow-400 text-black px-3 py-1 rounded">
           Buy Now
         </button>
-        <p className="mt-2 text-red-500">{message}</p>
       </div>
 
-      <h3 className="text-xl font-bold mt-6 mb-2">💰 Bulk Discount Pricing</h3>
-      <ul className="list-disc pl-5 text-sm mb-6">
-        <li>1 STC → ${PRICE_PER_STC}</li>
-        <li>2 STC → ${PRICE_PER_STC * 2 - 73} <span className="text-green-600">(Save $73)</span></li>
-        <li>3 STC → $9999 <span className="text-green-600">(Save $159)</span></li>
-      </ul>
+      <div className="mt-6">
+        <h3 className="font-bold text-lg">💰 Bulk Discount Pricing</h3>
+        <ul className="list-disc list-inside mt-2">
+          <li>1 STC → $3486</li>
+          <li>2 STC → $6899 (Save $73)</li>
+          <li>3 STC → $9999 (Save $159)</li>
+        </ul>
+      </div>
 
-      <h3 className="text-xl font-bold mb-2">Recent Transactions</h3>
-      <ul className="space-y-1 text-sm">
-        {transactions.map((tx, i) => (
-          <li key={i} className="border-b py-1">
-            • {tx.stc_amount} STC → ${tx.usd_amount}<br />
-            Wallet: {tx.address.slice(0, 10)}...{tx.address.slice(-4)}<br />
-            Block: {tx.block} – {tx.timestamp}
-          </li>
-        ))}
-      </ul>
+      <div className="mt-6">
+        <h3 className="font-bold text-lg">Recent Transactions</h3>
+        <ul className="mt-2">
+          {transactions.map((tx, idx) => (
+            <li key={idx}>
+              {tx.amountSTC} STC → ${tx.amountUSD} <br />
+              Wallet: {tx.wallet} <br />
+              Block: {tx.block} – {tx.timestamp}
+              <br /><br />
+            </li>
+          ))}
+        </ul>
+      </div>
 
-      <p className="text-xs text-gray-600 mt-4">
-        ⚠️ Disclaimer: Starcoin is a digital asset. Prices are volatile and subject to change. This is not financial advice. Trade responsibly.
+      <p className="mt-4 text-sm">
+        ⚠️ <b>Disclaimer:</b> Starcoin is a digital asset. Prices are volatile and subject to change. This is not financial advice. Trade responsibly.
       </p>
     </div>
   );
 }
+
+export default App;
