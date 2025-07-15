@@ -1,3 +1,20 @@
 [
-  { "name": "Alice", "stc": 5, "usd": 25.0 }
+  {
+    "usd": 25.0,
+    "stc": 5,
+    "wallet": "rstar1qv6ju8sqzarkgje9l8d2gqqd60fqlt64x3cqlq7",
+    "block": 101,
+    "txid": "stub-manual-txid-001",
+    "time": "2025-07-14 09:32:00",
+    "via": "manual"
+  },
+  {
+    "usd": 6972.0,
+    "stc": 2,
+    "wallet": "rstar1q42sspqhp57sjwz5d3s59zjqfkqfa4vxxzh56tg",
+    "block": 102,
+    "txid": "stub-paypal-txid-002",
+    "time": "2025-07-14 09:45:13",
+    "via": "paypal"
+  }
 ]
