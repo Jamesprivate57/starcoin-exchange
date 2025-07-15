@@ -1,164 +1,93 @@
-import './index.css'
-import { useEffect, useState } from "react"
+import './index.css';
+import { useState, useEffect } from 'react';
 
-function App() {
-  const [address, setAddress] = useState("")
-  const [amountUSD, setAmountUSD] = useState("")
-  const [message, setMessage] = useState("")
-  const [transactions, setTransactions] = useState([])
-  const API = "http://localhost:5000"
-  const PRICE_PER_STC = 3486
+const API = "https://starcoin-exchange.onrender.com";
+const PRICE_PER_STC = 3486;
+
+export default function App() {
+  const [address, setAddress] = useState("");
+  const [amountUSD, setAmountUSD] = useState("");
+  const [transactions, setTransactions] = useState([]);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     fetch(`${API}/transactions`)
-      .then(res => res.json())
-      .then(data => setTransactions(data))
-      .catch(err => {
-        console.error("Failed to load transactions:", err)
-        setTransactions([]) // fallback to empty
-      })
-  }, [])
+      .then((res) => res.json())
+      .then((data) => setTransactions(data.reverse().slice(0, 10)));
+  }, []);
 
-  const handleBuy = () => {
-    const usd = parseFloat(amountUSD)
-
-    if (!address || isNaN(usd) || usd <= 0) {
-      setMessage("❌ Please enter a valid amount and address.")
-      return
+  const handleBuy = async () => {
+    if (!address || !amountUSD) {
+      setMessage("⚠️ Please enter wallet address and amount.");
+      return;
     }
 
-    const stcAmount = usd / PRICE_PER_STC
-    if (stcAmount < 2) {
-      setMessage("❌ Minimum purchase is 2 STC.")
-      return
-    }
-
-    fetch(`${API}/buy`, {
+    const res = await fetch(`${API}/transfer`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ address, usd })
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === "success") {
-          setMessage(data.message)
-          setAmountUSD("")
-          setAddress("")
-          fetch(`${API}/transactions`)
-            .then(res => res.json())
-            .then(data => setTransactions(data))
-        } else {
-          setMessage("❌ " + (data.error || "Transaction failed"))
-        }
-      })
-      .catch(err => {
-        setMessage("❌ API error")
-        console.error("Buy failed:", err)
-      })
-  }
+      body: JSON.stringify({ address, amountUSD }),
+    });
 
-  // Demo fallback for display if no real transactions
-  const displayTx = transactions.length > 0 ? transactions : [
-    {
-      stc: 5,
-      usd: 25,
-      address: "rstar1qa9v...k3shv",
-      block: "1892",
-      timestamp: "just now"
-    }
-  ]
+    const data = await res.json();
+    setMessage(data.message);
+    setAddress("");
+    setAmountUSD("");
+
+    const txRes = await fetch(`${API}/transactions`);
+    const txData = await txRes.json();
+    setTransactions(txData.reverse().slice(0, 10));
+  };
 
   return (
-    <div className="min-h-screen p-6 max-w-xl mx-auto space-y-6">
-      {/* Exciting intro message */}
-      <p className="text-pink-300 font-semibold">
-        🚀 Starcoin is the future of free trade. The more you buy, the wealthier you become in digital wealth. 💰
-      </p>
+    <div className="min-h-screen text-black bg-white px-6 py-10 font-sans">
+      <h1 className="text-3xl font-bold mb-4">🚀 Starcoin is the future of free trade. The more you buy, the wealthier you become in digital wealth. 💰</h1>
 
-      {/* Header */}
-      <h1 className="text-3xl font-bold flex items-center gap-2">
-        Buy Starcoin (STC) <span className="text-yellow-400 text-4xl">⭐</span>
-      </h1>
+      <h2 className="text-2xl font-bold mb-2">Buy Starcoin (STC) ⭐</h2>
+      <p className="mb-1">1 STC = ${PRICE_PER_STC} USD</p>
+      <p className="mb-3">Minimum purchase is 2 STC (${2 * PRICE_PER_STC})</p>
 
-      {/* Price info */}
-      <p className="text-sm text-gray-300">
-        1 STC = <span className="font-bold">${PRICE_PER_STC} USD</span> <br />
-        <span className="text-red-400">
-          Minimum purchase is 2 STC (${PRICE_PER_STC * 2})
-        </span>
-      </p>
-
-      {/* Purchase form */}
-      <div className="bg-black bg-opacity-70 p-4 rounded-xl space-y-4">
-        <div className="space-y-2">
-          <label className="block text-sm">Your Starcoin Wallet Address:</label>
-          <input
-            type="text"
-            className="w-full p-2 bg-gray-900 text-white rounded"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="rstar1q..."
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label className="block text-sm">Amount (USD):</label>
-          <input
-            type="number"
-            className="w-full p-2 bg-gray-900 text-white rounded"
-            value={amountUSD}
-            onChange={(e) => setAmountUSD(e.target.value)}
-            placeholder={`Min $${PRICE_PER_STC * 2}`}
-          />
-        </div>
-
-        <button
-          onClick={handleBuy}
-          className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded"
-        >
+      <div className="mb-6 space-y-1">
+        <input
+          type="text"
+          placeholder="Your Starcoin Wallet Address: rstar1q..."
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          className="border p-2 w-full"
+        />
+        <input
+          type="number"
+          placeholder={`Min $${2 * PRICE_PER_STC}`}
+          value={amountUSD}
+          onChange={(e) => setAmountUSD(e.target.value)}
+          className="border p-2 w-full"
+        />
+        <button onClick={handleBuy} className="bg-yellow-400 hover:bg-yellow-500 px-4 py-2 mt-2 rounded">
           Buy Now
         </button>
-
-        {message && (
-          <p className="text-sm text-green-400 font-mono mt-2">{message}</p>
-        )}
+        <p className="mt-2 text-red-500">{message}</p>
       </div>
 
-      {/* Transaction history */}
-      <div className="bg-black bg-opacity-70 p-4 rounded-xl">
-        <h2 className="text-xl font-semibold mb-2">Recent Transactions</h2>
-        {displayTx.length === 0 ? (
-          <p className="text-sm text-gray-300">No transactions yet.</p>
-        ) : (
-          <ul className="list-disc list-inside">
-            {displayTx.map((tx, i) => {
-              const stc = tx.stc || tx.amount_stc || 0
-              const usd = tx.usd || tx.amount_usd || 0
-              const addr = tx.address || "unknown"
-              const block = tx.block || "N/A"
-              const time = tx.timestamp || "just now"
+      <h3 className="text-xl font-bold mt-6 mb-2">💰 Bulk Discount Pricing</h3>
+      <ul className="list-disc pl-5 text-sm mb-6">
+        <li>1 STC → ${PRICE_PER_STC}</li>
+        <li>2 STC → ${PRICE_PER_STC * 2 - 73} <span className="text-green-600">(Save $73)</span></li>
+        <li>3 STC → $9999 <span className="text-green-600">(Save $159)</span></li>
+      </ul>
 
-              return (
-                <li key={i} className="text-sm mb-2">
-                  <span className="font-bold">{stc} STC</span> →
-                  <span className="text-green-300"> ${usd}</span><br />
-                  <span className="text-gray-300">Wallet:</span> {addr}<br />
-                  <span className="text-yellow-300">Block:</span> {block} ·{" "}
-                  <span className="text-gray-400">{time}</span>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </div>
+      <h3 className="text-xl font-bold mb-2">Recent Transactions</h3>
+      <ul className="space-y-1 text-sm">
+        {transactions.map((tx, i) => (
+          <li key={i} className="border-b py-1">
+            • {tx.stc_amount} STC → ${tx.usd_amount}<br />
+            Wallet: {tx.address.slice(0, 10)}...{tx.address.slice(-4)}<br />
+            Block: {tx.block} – {tx.timestamp}
+          </li>
+        ))}
+      </ul>
 
-      {/* Disclaimer */}
-      <p className="text-sm text-yellow-400 mt-6">
-        ⚠️ Disclaimer: Starcoin is a digital asset. Prices are volatile and subject to change.
-        This is not financial advice. Trade responsibly.
+      <p className="text-xs text-gray-600 mt-4">
+        ⚠️ Disclaimer: Starcoin is a digital asset. Prices are volatile and subject to change. This is not financial advice. Trade responsibly.
       </p>
     </div>
-  )
+  );
 }
-
-export default App
