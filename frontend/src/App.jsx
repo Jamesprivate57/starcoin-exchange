@@ -15,6 +15,33 @@ function App() {
       .then((data) => setTransactions(data));
   }, []);
 
+  useEffect(() => {
+    if (window.paypal) {
+      window.paypal.Buttons({
+        style: {
+          layout: 'vertical',
+          color: 'gold',
+          shape: 'pill',
+          label: 'paypal'
+        },
+        createOrder: function (data, actions) {
+          return actions.order.create({
+            purchase_units: [{
+              amount: {
+                value: amountUSD || "6972" // fallback if empty
+              }
+            }]
+          });
+        },
+        onApprove: function (data, actions) {
+          return actions.order.capture().then(function (details) {
+            alert(`Transaction completed by ${details.payer.name.given_name}`);
+          });
+        }
+      }).render("#paypal-button-container");
+    }
+  }, [amountUSD]);
+
   const handleBuy = () => {
     if (!address || !amountUSD) return;
     fetch(`${API}/transfer`, {
@@ -45,7 +72,7 @@ function App() {
         Buy Starcoin (STC) <span>⭐</span>
       </h2>
 
-      <p className="mt-2">1 STC = $3486 USD</p>
+      <p className="mt-2">1 STC = ${PRICE_PER_STC} USD</p>
 
       <div className="mt-4">
         <input
@@ -63,10 +90,11 @@ function App() {
           onChange={(e) => setAmountUSD(e.target.value)}
         />
         <button onClick={handleBuy} className="bg-yellow-400 text-black px-3 py-1 rounded">
-          Buy Now
+          Buy Now (Internal)
         </button>
       </div>
 
+      {/* Bulk Pricing Section */}
       <div className="mt-6">
         <h3 className="font-bold text-lg">💰 Bulk Discount Pricing</h3>
         <ul className="list-disc list-inside mt-2">
@@ -76,6 +104,13 @@ function App() {
         </ul>
       </div>
 
+      {/* ✅ PayPal Buttons Rendered Below Here */}
+      <div className="mt-6">
+        <h3 className="font-bold text-lg">Pay Securely via PayPal</h3>
+        <div id="paypal-button-container" className="mt-2"></div>
+      </div>
+
+      {/* Transactions */}
       <div className="mt-6">
         <h3 className="font-bold text-lg">Recent Transactions</h3>
         <ul className="mt-2">
@@ -91,7 +126,7 @@ function App() {
       </div>
 
       <p className="mt-4 text-sm">
-        ⚠️ <b>Disclaimer:</b> Starcoin is a digital asset. Prices are volatile and subject to change. This is not financial advice. Trade responsibly.
+        ⚠️ <b>Disclaimer:</b> Starcoin is a digital asset. Prices are volatile and subject to change. Make sure to confirm all payments.
       </p>
     </div>
   );
