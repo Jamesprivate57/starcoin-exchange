@@ -1,8 +1,3 @@
-// File: frontend/src/App.jsx
-
-import { useState, useEffect } from "react";
-import "./index.css"; // Tailwind styles and global CSS
-
 function App() {
   const [transactions, setTransactions] = useState([]);
 
@@ -16,11 +11,7 @@ function App() {
   const handleBuy = () => {
     const address = document.getElementById("address").value;
     const amount = parseFloat(document.getElementById("amount").value);
-    if (!address || isNaN(amount)) {
-      alert("Please enter valid address and amount");
-      return;
-    }
-
+    if (!address || isNaN(amount)) return alert("Please enter valid address and amount");
     fetch(`${import.meta.env.VITE_API_URL}/buy`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -37,14 +28,11 @@ function App() {
   return (
     <div
       className="min-h-screen bg-cover bg-center text-white p-10"
-      style={{ backgroundImage: 'url(/bg.jpg)' }} // ✅ Load from public
+      style={{ backgroundImage: `url(/bg.jpg)` }} // ✅ public path
     >
       <div className="bg-black bg-opacity-60 max-w-xl mx-auto p-6 rounded-xl shadow-lg">
         <h1 className="text-3xl font-bold text-yellow-300 mb-4">Buy Starcoin (STC)</h1>
-        <p className="mb-4 text-sm">
-          1 STC = $4.99 USD — Securely purchase and mint digital Starcoin
-        </p>
-
+        <p className="mb-4 text-sm">1 STC = $4.99 USD — Securely purchase and mint directly to your wallet.</p>
         <div className="flex gap-2 mb-6">
           <input
             id="address"
@@ -64,7 +52,6 @@ function App() {
             Buy Now
           </button>
         </div>
-
         <div>
           <h2 className="text-xl font-semibold text-blue-400">Recent Transactions</h2>
           <ul className="mt-2 space-y-1 text-sm text-gray-200">
