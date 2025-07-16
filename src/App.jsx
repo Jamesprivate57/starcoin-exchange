@@ -1,6 +1,7 @@
+// File: frontend/src/App.jsx
+
 import { useState, useEffect } from "react";
-import "./index.css";
-import bg from "./assets/bg.jpg"; // ✅ Correct import for bundling
+import "./index.css"; // Tailwind styles and global CSS
 
 function App() {
   const [transactions, setTransactions] = useState([]);
@@ -15,7 +16,10 @@ function App() {
   const handleBuy = () => {
     const address = document.getElementById("address").value;
     const amount = parseFloat(document.getElementById("amount").value);
-    if (!address || isNaN(amount)) return alert("Please enter valid address and amount");
+    if (!address || isNaN(amount)) {
+      alert("Please enter valid address and amount");
+      return;
+    }
 
     fetch(`${import.meta.env.VITE_API_URL}/buy`, {
       method: "POST",
@@ -33,11 +37,13 @@ function App() {
   return (
     <div
       className="min-h-screen bg-cover bg-center text-white p-10"
-      style={{ backgroundImage: `url(${bg})` }} // ✅ Dynamic image usage
+      style={{ backgroundImage: 'url(/bg.jpg)' }} // ✅ Load from public
     >
-      <div className="bg-black bg-opacity-60 max-w-xl mx-auto p-6 rounded-xl shadow-xl">
+      <div className="bg-black bg-opacity-60 max-w-xl mx-auto p-6 rounded-xl shadow-lg">
         <h1 className="text-3xl font-bold text-yellow-300 mb-4">Buy Starcoin (STC)</h1>
-        <p className="mb-4 text-sm">1 STC = $4.99 USD — Securely purchase and mint directly.</p>
+        <p className="mb-4 text-sm">
+          1 STC = $4.99 USD — Securely purchase and mint digital Starcoin
+        </p>
 
         <div className="flex gap-2 mb-6">
           <input
