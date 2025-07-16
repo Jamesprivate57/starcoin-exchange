@@ -4,7 +4,7 @@
 
 body {
   @apply bg-cover bg-center bg-no-repeat text-white font-sans;
-  background-image: url('/bg.jpg');
+  background-image: url('/bg.jpg'); /* served from /public */
   min-height: 100vh;
   margin: 0;
 }
