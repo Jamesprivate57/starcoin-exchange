@@ -1,10 +1,29 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 body {
-  @apply bg-cover bg-center bg-no-repeat text-white font-sans;
-  background-image: url('/bg.jpg'); /* served from /public */
-  min-height: 100vh;
   margin: 0;
+  font-family: Arial, sans-serif;
+  background-image: url('/bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  color: white;
+  text-shadow: 1px 1px 3px black;
+}
+
+.container {
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 2rem;
+  max-width: 800px;
+  margin: 2rem auto;
+  border-radius: 12px;
+  box-shadow: 0 0 10px black;
+}
+
+h1, h2, p, label {
+  color: white;
+}
+
+input, button {
+  padding: 0.5rem;
+  margin: 0.5rem 0;
 }

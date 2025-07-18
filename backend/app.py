@@ -18,7 +18,8 @@ CORS(app)
 lock = Lock()
 
 TRANSACTION_LOG = "transactions.json"
-EXCHANGE_RATE = 3486
+EXCHANGE_RATE = 3486  # Buy rate
+SELL_RATE = 2800      # Sell rate
 MIN_PURCHASE_USD = 6972
 WALLET_NAME = "starcoin_wallet"
 
@@ -154,6 +155,54 @@ def paypal_notify():
             return "Error", 500
 
     return "INVALID", 400
+
+@app.route("/sell", methods=["POST"])
+def handle_sell():
+    data = request.get_json()
+    wallet = data.get("wallet")
+    amount_stc = float(data.get("amount", 0))
+    paypal_email = data.get("paypal_email", "")
+    FEE_PERCENT = 3.5
+
+    if not wallet or amount_stc <= 0 or not paypal_email:
+        return jsonify({"status": "error", "msg": "Invalid input"}), 400
+
+    gross_usd = round(amount_stc * SELL_RATE, 2)
+    fee = round(gross_usd * FEE_PERCENT / 100, 2)
+    net_usd = round(gross_usd - fee, 2)
+    now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+
+    entry = {
+        "usd": net_usd,
+        "gross_usd": gross_usd,
+        "fee": fee,
+        "stc": amount_stc,
+        "wallet": wallet,
+        "paypal_email": paypal_email,
+        "txid": "",
+        "block": get_block_count(),
+        "time": now,
+        "via": "sell"
+    }
+
+    save_transaction(entry)
+
+    if paypal_email:
+        html = f"""
+        <h2>Starcoin Sell Request</h2>
+        <p>You sold {amount_stc} STC for ${net_usd} USD after a ${fee} fee.</p>
+        <p>Payout will be sent to: {paypal_email}</p>
+        """
+        try:
+            send_email(paypal_email, "Sell Confirmation", html, wallet)
+        except Exception as e:
+            print("Email error:", e)
+
+    return jsonify({
+        "status": "success",
+        "msg": f"Sold {amount_stc} STC for ${net_usd} USD after ${fee} fee",
+        "net_usd": net_usd
+    })
 
 @app.route("/transactions", methods=["GET"])
 def get_transactions():

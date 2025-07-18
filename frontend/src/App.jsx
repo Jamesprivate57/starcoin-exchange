@@ -1,139 +1,178 @@
+// File: C:\CryptoProjects\starcoin-exchange\frontend\src\App.jsx
+
 import { useEffect, useState } from "react";
 import "./index.css";
 
 const API = "http://localhost:5000";
 const PRICE_PER_STC = 3486;
+const DONATION_BUTTON_ID = "F73VQ5AQ28N2G";
+const PAYPAL_URL = "https://www.paypal.com/cgi-bin/webscr";
+const PAYPAL_BUSINESS = "jamnmarg@gmail.com";
+const PAYPAL_NOTIFY_URL = "https://28995eb5f0a4.ngrok-free.app/paypal/notify";
+const PAYPAL_RETURN_URL = "https://28995eb5f0a4.ngrok-free.app/paypal/success";
 
 function App() {
-  const [address, setAddress] = useState("");
-  const [amountUSD, setAmountUSD] = useState("");
-  const [email, setEmail] = useState("");
-  const [transactions, setTransactions] = useState([]);
+    const [address, setAddress] = useState("");
+    const [amountUSD, setAmountUSD] = useState("");
+    const [email, setEmail] = useState("");
+    const [sellUSD, setSellUSD] = useState("");
+    const [sellWallet, setSellWallet] = useState("");
+    const [message, setMessage] = useState("");
+    const [transactions, setTransactions] = useState([]);
 
-  useEffect(() => {
-    fetch(`${API}/transactions`)
-      .then((res) => res.json())
-      .then((data) => setTransactions(data));
-  }, []);
-
-  const handleManualBuy = () => {
-    if (!address || !amountUSD) return alert("Missing wallet or amount");
-    fetch(`${API}/transaction`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ address, usd: amountUSD, email }),
-    })
-      .then((res) => res.json())
-      .then(() => {
-        alert("Transaction sent ✅");
+    useEffect(() => {
         fetch(`${API}/transactions`)
-          .then((res) => res.json())
-          .then((data) => setTransactions(data));
-        setAddress("");
-        setEmail("");
-        setAmountUSD("");
-      });
-  };
+            .then(res => res.json())
+            .then(data => setTransactions(data));
+    }, []);
 
-  return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-4">🚀 Buy Starcoin (STC)</h1>
-      <p className="mb-4">1 STC = ${PRICE_PER_STC} USD</p>
+    const handleManualBuy = () => {
+        if (!address || !amountUSD) return alert("Missing wallet or amount");
+        fetch(`${API}/transaction`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ address, usd: amountUSD, email }),
+        })
+            .then(res => res.json())
+            .then(() => fetch(`${API}/transactions`))
+            .then(res => res.json())
+            .then(data => {
+                alert("Transaction sent ✅");
+                setTransactions(data);
+                setAddress(""); setAmountUSD(""); setEmail("");
+            });
+    };
 
-      <div className="mb-4">
-        <h3 className="font-semibold">💰 Bulk Discount Pricing</h3>
-        <ul className="list-disc list-inside">
-          <li>1 STC → ${PRICE_PER_STC}</li>
-          <li>2 STC → $6899 (Save $73)</li>
-          <li>3 STC → $9999 (Save $159)</li>
-        </ul>
-      </div>
+    const handleSell = () => {
+        if (!sellWallet || !sellUSD) return alert("Missing wallet or amount");
+        fetch(`${API}/sell`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: "Bob", usd: parseFloat(sellUSD), address: sellWallet }),
+        })
+            .then(res => res.json())
+            .then(data => {
+                setMessage(data.message || data.error);
+                return fetch(`${API}/transactions`);
+            })
+            .then(res => res.json())
+            .then(data => {
+                setTransactions(data);
+                setSellUSD(""); setSellWallet("");
+            });
+    };
 
-      <div className="space-y-2">
-        <input
-          type="text"
-          className="text-black p-1 w-full"
-          placeholder="Your Starcoin Wallet Address"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-        />
-        <input
-          type="number"
-          className="text-black p-1 w-full"
-          placeholder="Amount in USD"
-          value={amountUSD}
-          onChange={(e) => setAmountUSD(e.target.value)}
-        />
-        <input
-          type="email"
-          className="text-black p-1 w-full"
-          placeholder="Your Email (for receipt)"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <button
-          className="bg-yellow-400 text-black px-4 py-2 rounded"
-          onClick={handleManualBuy}
-        >
-          Buy Now (Manual)
-        </button>
-      </div>
+    return (
+        <div className="flex justify-center min-h-screen p-6">
+            <div className="w-full max-w-4xl bg-black bg-opacity-70 p-8 rounded-2xl text-white space-y-12">
 
-      <div className="mt-6">
-        <h2 className="text-xl font-bold">💳 Buy with PayPal</h2>
-        <form
-          action="https://www.paypal.com/cgi-bin/webscr"
-          method="post"
-          target="_top"
-        >
-          <input type="hidden" name="cmd" value="_xclick" />
-          <input type="hidden" name="business" value="jamesnmarg@live.com.au" />
-          <input type="hidden" name="item_name" value="Starcoin Purchase" />
-          <input type="hidden" name="amount" value={amountUSD} />
-          <input type="hidden" name="currency_code" value="USD" />
-          <input
-            type="hidden"
-            name="notify_url"
-            value="https://28995eb5f0a4.ngrok-free.app/paypal/notify"
-          />
-          <input
-            type="hidden"
-            name="return"
-            value="https://28995eb5f0a4.ngrok-free.app/paypal/success"
-          />
-          <input type="hidden" name="custom" value={address} />
-          <input
-            type="image"
-            src="https://www.paypalobjects.com/en_US/i/btn/btn_buynowCC_LG.gif"
-            border="0"
-            name="submit"
-            alt="PayPal - The safer, easier way to pay online!"
-          />
-        </form>
-      </div>
+                {/* Header */}
+                <header className="text-center space-y-2">
+                    <h1 className="text-4xl font-bold">🚀 Buy Starcoin (STC)</h1>
+                    <p className="text-lg">1 STC = ${PRICE_PER_STC} USD</p>
+                </header>
 
-      <div className="mt-6">
-        <h2 className="text-xl font-bold">📜 Recent Transactions</h2>
-        <ul className="mt-2">
-          {transactions.map((tx, i) => (
-            <li key={i} className="mb-2">
-              {tx.stc} STC = ${tx.usd}<br />
-              Wallet: {tx.wallet}<br />
-              TXID: {tx.txid}<br />
-              Block: {tx.block}<br />
-              Time: {tx.time}<br />
-              Method: {tx.via}
-            </li>
-          ))}
-        </ul>
-      </div>
+                {/* Bulk Pricing */}
+                <section className="text-center">
+                    <h2 className="text-2xl font-semibold mb-2">💰 Bulk Discount Pricing</h2>
+                    <ul className="list-disc list-inside inline-block text-left">
+                        <li>1 STC → ${PRICE_PER_STC}</li>
+                        <li>2 STC → $6899 (Save $73)</li>
+                        <li>3 STC → $9999 (Save $159)</li>
+                    </ul>
+                </section>
 
-      <p className="mt-6 text-xs text-gray-400">
-        ⚠️ Disclaimer: Starcoin is a digital asset. Prices are volatile and subject to change. Make sure to confirm all payments.<br />
-        Starcoin is experimental. All payments are final.
-      </p>
-    </div>
-  );
+                {/* Bank Transfer */}
+                <section className="space-y-4">
+                    <h2 className="text-2xl font-semibold">🏦 Pay with Bank Transfer</h2>
+                    <div className="flex flex-col sm:flex-row flex-wrap justify-center items-center gap-4">
+                        <input type="text" className="text-black p-2 w-64" placeholder="Your Wallet Address" value={address} onChange={e => setAddress(e.target.value)} />
+                        <input type="number" className="text-black p-2 w-32" placeholder="USD Amount" value={amountUSD} onChange={e => setAmountUSD(e.target.value)} />
+                        <input type="email" className="text-black p-2 w-64" placeholder="Email (receipt)" value={email} onChange={e => setEmail(e.target.value)} />
+                        <button onClick={handleManualBuy} className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded font-semibold">Transfer Now</button>
+                    </div>
+                </section>
+
+                {/* PayPal + Card */}
+                <section className="space-y-4">
+                    <h2 className="text-2xl font-semibold">💳 Pay with PayPal or Card</h2>
+                    <div className="flex justify-center gap-8">
+                        <form action={PAYPAL_URL} method="post" target="_blank">
+                            <input type="hidden" name="cmd" value="_xclick" />
+                            <input type="hidden" name="business" value={PAYPAL_BUSINESS} />
+                            <input type="hidden" name="item_name" value="Starcoin Purchase" />
+                            <input type="hidden" name="amount" value={amountUSD} />
+                            <input type="hidden" name="currency_code" value="USD" />
+                            <input type="hidden" name="custom" value={address} />
+                            <input type="hidden" name="notify_url" value={PAYPAL_NOTIFY_URL} />
+                            <input type="hidden" name="return" value={PAYPAL_RETURN_URL} />
+                            <button type="submit">
+                                <img src="https://www.paypalobjects.com/webstatic/icon/pp258.png" alt="Pay with PayPal" className="h-12" />
+                            </button>
+                        </form>
+
+                        <form action={PAYPAL_URL} method="post" target="_blank">
+                            <input type="hidden" name="cmd" value="_xclick" />
+                            <input type="hidden" name="business" value={PAYPAL_BUSINESS} />
+                            <input type="hidden" name="item_name" value="Starcoin Purchase" />
+                            <input type="hidden" name="amount" value={amountUSD} />
+                            <input type="hidden" name="currency_code" value="USD" />
+                            <input type="hidden" name="custom" value={address} />
+                            <input type="hidden" name="notify_url" value={PAYPAL_NOTIFY_URL} />
+                            <input type="hidden" name="return" value={PAYPAL_RETURN_URL} />
+                            <input type="hidden" name="landing_page" value="billing" />
+                            <button type="submit">
+                                <img src="https://www.paypalobjects.com/webstatic/mktg/Logo/AM_mc_vs_dc_ae.jpg" alt="Pay with Card" className="h-12" />
+                            </button>
+                        </form>
+                    </div>
+                </section>
+
+                {/* Donate */}
+                <section className="text-center space-y-4">
+                    <h2 className="text-2xl font-semibold">🙏 Donate Without Buying</h2>
+                    <form action="https://www.paypal.com/donate" method="post" target="_blank">
+                        <input type="hidden" name="hosted_button_id" value={DONATION_BUTTON_ID} />
+                        <button className="bg-yellow-400 hover:bg-yellow-500 px-6 py-2 rounded font-semibold">Donate</button>
+                    </form>
+                </section>
+
+                {/* Sell USD → STC */}
+                <section className="space-y-4">
+                    <h2 className="text-2xl font-semibold">💵 Sell USD → STC</h2>
+                    <div className="flex flex-col sm:flex-row flex-wrap justify-center items-center gap-4">
+                        <input type="number" className="text-black p-2 w-32" placeholder="USD Amount" value={sellUSD} onChange={e => setSellUSD(e.target.value)} />
+                        <input type="text" className="text-black p-2 w-64" placeholder="Your STC Wallet" value={sellWallet} onChange={e => setSellWallet(e.target.value)} />
+                        <button onClick={handleSell} className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded font-semibold">Sell Now</button>
+                    </div>
+                    {message && <p className="text-green-400 text-center">{message}</p>}
+                </section>
+
+                {/* Transactions */}
+                <section className="space-y-2">
+                    <h2 className="text-2xl font-semibold text-center">📜 Recent Transactions</h2>
+                    <ul className="mx-auto max-w-2xl space-y-4 text-left">
+                        {transactions.map((tx, i) => (
+                            <li key={i}>
+                                <strong>{tx.stc} STC = ${tx.usd}</strong><br />
+                                Wallet: {tx.wallet}<br />
+                                TXID: {tx.txid}<br />
+                                Block: {tx.block}<br />
+                                Time: {tx.time}<br />
+                                Method: {tx.via}
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+
+                {/* Disclaimer */}
+                <footer className="text-center text-sm text-gray-400">
+                    ⚠️ Starcoin is a digital asset. Prices are volatile and subject to change. Confirm all payments.<br />
+                    Starcoin is experimental. All payments are final.
+                </footer>
+            </div>
+        </div>
+    );
 }
 
 export default App;
