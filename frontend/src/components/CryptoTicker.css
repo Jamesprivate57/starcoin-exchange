@@ -1,0 +1,32 @@
+/* ~/frontend/src/components/CryptoTicker.css */
+
+.ticker-bar {
+  overflow: hidden;
+  white-space: nowrap;
+  background-color: black;
+  padding: 0.3rem 0;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  width: 100%;
+  position: relative;
+  z-index: 999;
+}
+
+.ticker-track {
+  display: inline-block;
+  animation: ticker-scroll 30s linear infinite;
+}
+
+.ticker-item {
+  display: inline-block;
+  margin-right: 2rem;
+}
+
+@keyframes ticker-scroll {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}

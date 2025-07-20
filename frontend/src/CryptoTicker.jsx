@@ -1,82 +1,74 @@
-﻿// src/CryptoTicker.jsx
-import React, { useEffect, useState, useRef } from "react";
+﻿import { useEffect, useState } from "react";
 
-export default function CryptoTicker() {
-    const [prices, setPrices] = useState([]);
-    const tickerRef = useRef(null);
-    const containerRef = useRef(null);
-    const [tickerWidth, setTickerWidth] = useState(0);
-    const [containerWidth, setContainerWidth] = useState(0);
+const COINS = [
+    { id: "bitcoin", symbol: "BTC", name: "Bitcoin" },
+    { id: "ethereum", symbol: "ETH", name: "Ethereum" },
+    { id: "solana", symbol: "SOL", name: "Solana" },
+    { id: "pepe", symbol: "PEPE", name: "Pepe" },
+    { id: "shiba-inu", symbol: "SHIB", name: "Shiba Inu" },
+    { id: "dogecoin", symbol: "DOGE", name: "Dogecoin" },
+    { id: "ripple", symbol: "XRP", name: "XRP" },
+    { id: "ethereum-gas", symbol: "ETH Gas", name: "ETH Gas" },
+    { id: "starcoin", symbol: "STAR", name: "Starcoin" },
+];
+
+function CryptoTicker() {
+    const [prices, setPrices] = useState({});
 
     useEffect(() => {
-        async function fetchPrices() {
+        const fetchPrices = async () => {
             try {
+                const ids = COINS.filter(
+                    (c) => c.id !== "ethereum-gas" && c.id !== "starcoin"
+                )
+                    .map((c) => c.id)
+                    .join(",");
+
                 const res = await fetch(
-                    "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,dogecoin,ripple&vs_currencies=usd&include_24hr_change=true"
+                    `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`
                 );
                 const data = await res.json();
-                const formatted = [
-                    { symbol: "BTC", price: data.bitcoin.usd, change: data.bitcoin.usd_24h_change },
-                    { symbol: "ETH", price: data.ethereum.usd, change: data.ethereum.usd_24h_change },
-                    { symbol: "SOL", price: data.solana.usd, change: data.solana.usd_24h_change },
-                    { symbol: "DOGE", price: data.dogecoin.usd, change: data.dogecoin.usd_24h_change },
-                    { symbol: "XRP", price: data.ripple.usd, change: data.ripple.usd_24h_change },
-                ];
-                setPrices(formatted);
-            } catch {
-                setPrices([]);
+
+                data["ethereum-gas"] = { usd: 1.44, usd_24h_change: 0 };
+                data["starcoin"] = { usd: 2499, usd_24h_change: 0 };
+
+                setPrices(data);
+            } catch (err) {
+                console.error("Failed to fetch prices:", err);
             }
-        }
+        };
+
         fetchPrices();
-        const interval = setInterval(fetchPrices, 30000);
+        const interval = setInterval(fetchPrices, 60000);
         return () => clearInterval(interval);
     }, []);
 
-    useEffect(() => {
-        if (tickerRef.current && containerRef.current) {
-            setTickerWidth(tickerRef.current.scrollWidth);
-            setContainerWidth(containerRef.current.offsetWidth);
-        }
-    }, [prices]);
-
-    const animationDuration = tickerWidth ? (tickerWidth / 100) * 12 : 20; // tweak speed here
-
     return (
-        <div
-            ref={containerRef}
-            className="w-full overflow-hidden bg-black text-white text-sm font-semibold select-none"
-            style={{ height: "30px", lineHeight: "30px", whiteSpace: "nowrap" }}
-            aria-label="Live cryptocurrency prices ticker"
-        >
-            <div
-                ref={tickerRef}
-                style={{
-                    display: "inline-block",
-                    paddingLeft: containerWidth,
-                    animation: `scrollLeft ${animationDuration}s linear infinite`,
-                }}
-            >
-                {prices.length === 0 ? (
-                    <span className="px-4">Loading prices...</span>
-                ) : (
-                    prices.map(({ symbol, price, change }) => (
-                        <span
-                            key={symbol}
-                            className="px-6"
-                            style={{ color: change >= 0 ? "lightgreen" : "tomato" }}
-                        >
-                            {symbol} ${price.toFixed(2)} {change >= 0 ? "▲" : "▼"} {change.toFixed(2)}%
-                        </span>
-                    ))
+        <div className="ticker-bar text-sm text-white">
+            <div className="ticker-track">
+                {[...Array(2)].flatMap((_, repeatIndex) =>
+                    COINS.map(({ symbol, id }, i) => {
+                        const coin = prices[id];
+                        if (!coin) return null;
+
+                        const price = parseFloat(coin.usd).toFixed(4);
+                        const change = parseFloat(coin.usd_24h_change).toFixed(2);
+                        const isUp = parseFloat(change) >= 0;
+
+                        return (
+                            <span key={`${symbol}-${repeatIndex}-${i}`} className="inline-block mr-8">
+                                <span className="text-white">{symbol}</span>{" "}
+                                <span className="text-gray-300">${price}</span>{" "}
+                                <span className={isUp ? "text-green-400" : "text-red-400"}>
+                                    ({change}%)
+                                </span>
+                            </span>
+                        );
+                    })
                 )}
             </div>
-
-            <style>{`
-        @keyframes scrollLeft {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-${tickerWidth + containerWidth}px); }
-        }
-      `}</style>
         </div>
     );
 }
+
+export default CryptoTicker;
