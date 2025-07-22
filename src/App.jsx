@@ -22,30 +22,60 @@ function App() {
     }, []);
 
     const handleManualBuy = async () => {
-        await fetch(`${BACKEND_URL}/buy/manual`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ amount: amountUSD, address, email })
-        });
-        alert("Manual buy request sent!");
+        if (!address || !amountUSD) {
+            alert("Please enter wallet address and amount.");
+            return;
+        }
+        try {
+            const res = await fetch(`${BACKEND_URL}/buy/manual`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ amount: amountUSD, address, email })
+            });
+            const data = await res.json();
+            alert(data.message || "Manual buy request sent!");
+        } catch (err) {
+            alert("Purchase failed. Check console for details.");
+            console.error(err);
+        }
     };
 
     const handleSell = async () => {
-        await fetch(`${BACKEND_URL}/sell`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ usd: sellUSD, wallet: sellWallet })
-        });
-        alert("Sell request sent!");
+        if (!sellUSD || !sellWallet) {
+            alert("Please enter amount and wallet address.");
+            return;
+        }
+        try {
+            const res = await fetch(`${BACKEND_URL}/sell`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ usd: sellUSD, wallet: sellWallet })
+            });
+            const data = await res.json();
+            alert(data.message || "Sell request sent!");
+        } catch (err) {
+            alert("Sell failed. Check console for details.");
+            console.error(err);
+        }
     };
 
     const handleWithdraw = async () => {
-        await fetch(`${BACKEND_URL}/withdraw`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ amount: withdrawAmount, email: withdrawEmail })
-        });
-        alert("Withdrawal requested!");
+        if (!withdrawAmount || !withdrawEmail) {
+            alert("Please enter amount and email.");
+            return;
+        }
+        try {
+            const res = await fetch(`${BACKEND_URL}/withdraw`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ amount: withdrawAmount, email: withdrawEmail })
+            });
+            const data = await res.json();
+            alert(data.message || "Withdrawal requested!");
+        } catch (err) {
+            alert("Withdrawal failed. Check console for details.");
+            console.error(err);
+        }
     };
 
     return (
@@ -88,8 +118,8 @@ function App() {
                     <input type="hidden" name="currency_code" value="USD" />
                     <input type="hidden" name="notify_url" value="https://28995eb5f0a4.ngrok-free.app/paypal/notify" />
                     <input type="hidden" name="return" value="https://28995eb5f0a4.ngrok-free.app/paypal/success" />
-                    <input type="text" name="amount" placeholder="Amount in USD" />
-                    <input type="text" name="custom" placeholder="Your STC Wallet Address" />
+                    <input type="text" name="amount" placeholder="Amount in USD" required />
+                    <input type="text" name="custom" placeholder="Your STC Wallet Address" required />
                     <button type="submit">Pay with PayPal</button>
                 </form>
 
